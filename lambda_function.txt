@@ -1,0 +1,61 @@
+import json
+import boto3
+import mimetypes
+mimetypes.add_type('applicationvnd.openxmlformats-officedocument.wordprocessingml.document', '.docx')
+mimetypes.add_type('applicationvnd.openxmlformats-officedocument.presentationml.presentation', '.pptx')
+mimetypes.add_type('applicationvnd.openxmlformats-officedocument.spreadsheetml.sheet', '.xlsx')
+
+s3 = boto3.client('s3')
+rekognition = boto3.client('rekognition') 
+
+def lambda_handler(event, context)
+    print(Received event, json.dumps(event, indent=2))
+    bucket_name = event['Records'][0]['s3']['bucket']['name']
+    object_key = event['Records'][0]['s3']['object']['key']
+    mime_type, _ = mimetypes.guess_type(object_key)
+    print(fGuessed MIME type {mime_type})
+    if mime_type and mime_type.startswith(image)
+        print(fProcessing image with Rekognition {object_key})
+        try
+            response = rekognition.detect_labels(
+                Image={
+                    'S3Object' {
+                        'Bucket' bucket_name,
+                        'Name' object_key
+                    }
+                },
+                MaxLabels=10,
+                MinConfidence=75
+            )
+            
+            print(Detected Labels)
+            for label in response['Labels']
+                print(f- {label['Name']} ({label['Confidence'].2f}%))
+            
+            return {
+                'statusCode' 200,
+                'body' json.dumps({
+                    'message' fImage {object_key} analyzed successfully.,
+                    'fileType' mime_type,
+                    'labels' [label['Name'] for label in response['Labels']]
+                })
+            }
+        
+        except Exception as e
+            print(fError processing image with Rekognition {str(e)})
+            return {
+                'statusCode' 500,
+                'body' json.dumps({'error' str(e)})
+            }
+    
+    else
+        msg = fFile {object_key} is not an image. Detected file type {mime_type}
+        print(msg)
+        
+        return {
+            'statusCode' 200,
+            'body' json.dumps({
+                'message' msg,
+                'fileType' mime_type
+            })
+        }
